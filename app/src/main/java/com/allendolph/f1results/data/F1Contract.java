@@ -82,10 +82,6 @@ public class F1Contract {
         public static final String COLUMN_CIRCUIT_ID = "circuit_id";
 
         // Content Uri Helper Methods
-        public static Uri buildRaceUri(long id) {
-            return ContentUris.withAppendedId(CONTENT_URI, id);
-        }
-
         public static Uri buildRaceSeasonUri(String season) {
             return CONTENT_URI.buildUpon().appendPath(season).build();
         }
@@ -236,5 +232,48 @@ public class F1Contract {
         public static String getResultFromUri(Uri uri) {
             return uri.getPathSegments().get(1);
         }
-     }
+    }
+
+    /* Inner class that defines the table contents of the results */
+    public static final class StandingsEntry implements BaseColumns {
+        public static final Uri CONTENT_URI =
+                BASE_CONTENT_URI.buildUpon().appendPath(PATH_STANDINGS).build();
+        public static final String CONTENT_TYPE =
+                "vnd.android.cursor.dir/" + CONTENT_AUTHORITY + "/" + PATH_STANDINGS;
+        public static final String CONTENT_ITEM_TYPE =
+                "vnd.android.cursor.dir/" + CONTENT_AUTHORITY + "/" + PATH_STANDINGS;
+
+        // Table Name
+        public static final String TABLE_NAME = "standings";
+
+        // Columns
+        public static final String COLUMN_SEASON = "season";
+        public static final String COLUMN_ROUND = "round";
+        public static final String COLUMN_POSITION = "position";
+        public static final String COLUMN_POSITION_TEXT = "positionText";
+        public static final String COLUMN_POINTS = "points";
+        public static final String COLUMN_WINS = "wins";
+
+        // Foreign Key Columns
+        public static final String COLUMN_DRIVER_ID = "driver_id";
+        public static final String COLUMN_CONSTRUCTOR_ID = "constructor_id";
+
+        // Content Uri Helper Methods
+        public static Uri buildStandingsSeasonUri(String season) {
+            return CONTENT_URI.buildUpon().appendPath(season).build();
+        }
+
+        public static Uri buildStandingsSeasonWithRound(String season, String round) {
+            return CONTENT_URI.buildUpon().appendPath(season)
+                    .appendPath(round).build();
+        }
+
+        public static String getSeasonFromUri(Uri uri) {
+            return uri.getPathSegments().get(1);
+        }
+
+        public static String getRoundFromUri(Uri uri) {
+            return uri.getPathSegments().get(2);
+        }
+    }
 }
