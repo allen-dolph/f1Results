@@ -37,7 +37,7 @@ public class TestDb extends AndroidTestCase {
 
         // Test Drivers Table
         // create a map of values to test driver entry
-        ContentValues driverValues = getDriverContentValues();
+        ContentValues driverValues = TestUtil.getDriverContentValues();
 
         long driverRowId;
         driverRowId = db.insert(DriverEntry.TABLE_NAME, null, driverValues);
@@ -153,30 +153,6 @@ public class TestDb extends AndroidTestCase {
     }
 
     // Helper methods to get values to insert for the tests
-    ContentValues getDriverContentValues() {
-        ContentValues values = new ContentValues();
-
-        String driverId = "hamilton";
-        int permanentNumber = 44;
-        String code = "HAM";
-        String url = "http://testurl.com";
-        String givenName = "Lewis";
-        String familyName = "Hamilton";
-        String dateOfBirth = "1985-01-07";
-        String nationality = "British";
-
-        values.put(DriverEntry.COLUMN_DRIVER_ID, driverId);
-        values.put(DriverEntry.COLUMN_PERMANENT_NUMBER, permanentNumber);
-        values.put(DriverEntry.COLUMN_CODE, code);
-        values.put(DriverEntry.COLUMN_URL, url);
-        values.put(DriverEntry.COLUMN_GIVEN_NAME, givenName);
-        values.put(DriverEntry.COLUMN_FAMILY_NAME, familyName);
-        values.put(DriverEntry.COLUMN_DATE_OF_BIRTH, dateOfBirth);
-        values.put(DriverEntry.COLUMN_NATIONALITY, nationality);
-
-        return values;
-    }
-
     ContentValues getConstructorContentValues() {
         ContentValues values = new ContentValues();
 
