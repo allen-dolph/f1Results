@@ -3,11 +3,13 @@ package com.allendolph.f1results.data;
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.provider.ContactsContract;
 
 import com.allendolph.f1results.data.F1Contract.DriverEntry;
 import com.allendolph.f1results.data.F1Contract.ConstructorEntry;
 import com.allendolph.f1results.data.F1Contract.CircuitEntry;
-
+import com.allendolph.f1results.data.F1Contract.RaceEntry;
+import com.allendolph.f1results.data.F1Contract.ResultsEntry;
 
 /**
  * Created by allendolph on 3/30/15.
@@ -79,6 +81,59 @@ public class F1DbHelper extends SQLiteOpenHelper {
                         " ) ON CONFLICT REPLACE);";
 
         db.execSQL(SQL_CREATE_CIRCUITS_TABLE);
+
+        // Create the Race Table
+        final String SQL_CREATE_RACE_TABLE =
+                "CREATE TABLE " + RaceEntry.TABLE_NAME + "(" +
+                        RaceEntry._ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                        RaceEntry.COLUMN_SEASON + " INTEGER NOT NULL, " +
+                        RaceEntry.COLUMN_ROUND + " INTEGER NOT NULL, " +
+                        RaceEntry.COLUMN_URL + " TEXT NOT NULL, " +
+                        RaceEntry.COLUMN_RACE_NAME + " TEXT NOT NULL, " +
+                        RaceEntry.COLUMN_DATE + " TEXT NOT NULL, " +
+                        RaceEntry.COLUMN_TIME + " TEXT NOT NULL, " +
+
+                        // foreign key columns
+                        RaceEntry.COLUMN_CIRCUIT_ID + " INTEGER NOT NULL, " +
+
+                        // Set up the circuit id column as a foreign key to location table
+                        " FOREIGN KEY (" + RaceEntry.COLUMN_CIRCUIT_ID + ") REFERENCES " +
+                        CircuitEntry.TABLE_NAME + " (" + CircuitEntry._ID + "));";
+
+        db.execSQL(SQL_CREATE_RACE_TABLE);
+
+        // Create the Results Table
+        final String SQL_CREATE_RESULTS_TABLE =
+                "CREATE TABLE " + ResultsEntry.TABLE_NAME + "(" +
+                        ResultsEntry._ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                        ResultsEntry.COLUMN_NUMBER + " INTEGER NOT NULL, " +
+                        ResultsEntry.COLUMN_POSITION + " INTEGER NOT NULL, " +
+                        ResultsEntry.COLUMN_POSITION_TEXT + " TEXT NOT NULL, " +
+                        ResultsEntry.COLUMN_POINTS + " INTEGER NOT NULL, " +
+                        ResultsEntry.COLUMN_GRID + " INTEGER NOT NULL, " +
+                        ResultsEntry.COLUMN_LAPS + " INTEGER NOT NULL, " +
+                        ResultsEntry.COLUMN_STATUS + " INTEGER NOT NULL, " +
+                        ResultsEntry.COLUMN_TIME_MILLIS + " TEXT NOT NULL, " +
+                        ResultsEntry.COLUMN_TIME + " TEXT NOT NULL, " +
+                        ResultsEntry.COLUMN_FASTEST_LAP_RANK + " INTEGER NOT NULL, " +
+                        ResultsEntry.COLUMN_FASTEST_LAP_LAP + " INTEGER NOT NULL, " +
+                        ResultsEntry.COLUMN_FASTEST_LAP_TIME + " TEXT NOT NULL, " +
+                        ResultsEntry.COLUMN_FASTEST_LAP_AVG_SPEED_UNITS + " TEXT NOT NULL, " +
+                        ResultsEntry.COLUMN_FASTEST_LAP_AVG_SPEED_SPEED + " REAL NOT NULL, " +
+
+                        // foreign key columns
+                        ResultsEntry.COLUMN_DRIVER_ID + " INTEGER NOT NULL, " +
+                        ResultsEntry.COLUMN_CONSTRUCTOR_ID + " INTEGER NOT NULL, " +
+                        ResultsEntry.COLUMN_RACE_ID + " INTEGER NOT NULL, " +
+
+                        // Setup the foreign key constraints for dirver, constructor and race
+                        " FOREIGN KEY (" + ResultsEntry.COLUMN_DRIVER_ID + ") REFERENCES " +
+                        DriverEntry.TABLE_NAME + " (" + DriverEntry._ID + "), " +
+                        " FOREIGN KEY (" + ResultsEntry.COLUMN_CONSTRUCTOR_ID + ") REFERENCES " +
+                        ConstructorEntry.TABLE_NAME + " (" + ConstructorEntry._ID + "), " +
+                        " FOREIGN KEY (" + ResultsEntry.COLUMN_RACE_ID + ") REFERENCES " +
+                        RaceEntry.TABLE_NAME + " (" + RaceEntry._ID + "));";
+        db.execSQL(SQL_CREATE_RESULTS_TABLE);
     }
 
     @Override

@@ -75,7 +75,7 @@ public class F1Contract {
         public static final String COLUMN_ROUND = "round";
         public static final String COLUMN_URL = "url";
         public static final String COLUMN_RACE_NAME = "raceName";
-        public static final String COLUMN_DATA = "date";
+        public static final String COLUMN_DATE = "date";
         public static final String COLUMN_TIME = "time";
 
         // Foreign Key Columns
