@@ -25,7 +25,9 @@ public class F1Provider extends ContentProvider {
     private static final int DRIVER = 100;
     private static final int DRIVER_ID = 101;
     private static final int CONSTRUCTOR = 200;
+    private static final int CONSTRUCTOR_ID = 201;
     private static final int CIRCUIT = 300;
+    private static final int CIRCUIT_ID = 301;
     private static final int RACE = 400;
     private static final int RACE_SEASON = 401;
     private static final int RACE_SEASON_ROUND = 402;
@@ -50,9 +52,11 @@ public class F1Provider extends ContentProvider {
 
         // Constructors
         matcher.addURI(authority, F1Contract.PATH_CONSTRUCTOR, CONSTRUCTOR);
+        matcher.addURI(authority, F1Contract.PATH_CONSTRUCTOR + "/#", CONSTRUCTOR_ID);
 
         // Circuits
         matcher.addURI(authority, F1Contract.PATH_CIRCUIT, CIRCUIT);
+        matcher.addURI(authority, F1Contract.PATH_CIRCUIT + "/#", CIRCUIT_ID);
 
         // Races
         matcher.addURI(authority, F1Contract.PATH_RACE, RACE);
@@ -118,6 +122,19 @@ public class F1Provider extends ContentProvider {
                 );
                 break;
             }
+            // "constructor/#"
+            case CONSTRUCTOR_ID: {
+                retCursor = mOpenHelper.getReadableDatabase().query(
+                        ConstructorEntry.TABLE_NAME,
+                        projection,
+                        DriverEntry._ID + " = '" + ContentUris.parseId(uri) + "'",
+                        null,
+                        null,
+                        null,
+                        sortOrder
+                );
+                break;
+            }
             // "circuit"
             case CIRCUIT: {
                 retCursor = mOpenHelper.getReadableDatabase().query(
@@ -125,6 +142,19 @@ public class F1Provider extends ContentProvider {
                         projection,
                         selection,
                         selectionArgs,
+                        null,
+                        null,
+                        sortOrder
+                );
+                break;
+            }
+            // "circuit/#"
+            case CIRCUIT_ID: {
+                retCursor = mOpenHelper.getReadableDatabase().query(
+                        CircuitEntry.TABLE_NAME,
+                        projection,
+                        CircuitEntry._ID + " = '" + ContentUris.parseId(uri) + "'",
+                        null,
                         null,
                         null,
                         sortOrder
@@ -145,10 +175,21 @@ public class F1Provider extends ContentProvider {
         switch (match) {
             case DRIVER:
                 return DriverEntry.CONTENT_TYPE;
+            case DRIVER_ID:
+                return DriverEntry.CONTENT_ITEM_TYPE;
             case CONSTRUCTOR:
                 return ConstructorEntry.CONTENT_TYPE;
+            case CONSTRUCTOR_ID:
+                return ConstructorEntry.CONTENT_ITEM_TYPE;
             case CIRCUIT:
                 return CircuitEntry.CONTENT_TYPE;
+            case CIRCUIT_ID:
+                return CircuitEntry.CONTENT_ITEM_TYPE;
+            case RACE:
+            case RACE_SEASON:
+                return RaceEntry.CONTENT_TYPE;
+            case RACE_SEASON_ROUND:
+                return RaceEntry.CONTENT_ITEM_TYPE;
             default:
                 throw new UnsupportedOperationException("Unknown uri: " + uri);
         }
@@ -166,7 +207,24 @@ public class F1Provider extends ContentProvider {
                 if(_id > 0) {
                     returnUri = DriverEntry.buildDriverUri(_id);
                 } else {
-                    //throw new SQLException("Failed to insert driver row into: " + uri);
+                    returnUri = null;
+                }
+                break;
+            }
+            case CONSTRUCTOR: {
+                long _id = db.insert(ConstructorEntry.TABLE_NAME, null, values);
+                if(_id > 0) {
+                    returnUri = ConstructorEntry.buildConstructorUri(_id);
+                } else {
+                    returnUri = null;
+                }
+                break;
+            }
+            case CIRCUIT: {
+                long _id = db.insert(CircuitEntry.TABLE_NAME, null, values);
+                if(_id > 0) {
+                    returnUri = CircuitEntry.buildCircuitUri(_id);
+                } else {
                     returnUri = null;
                 }
                 break;

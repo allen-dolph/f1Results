@@ -54,7 +54,7 @@ public class TestDb extends AndroidTestCase {
 
         // Test Constructors Table
         // create a map of constructor values
-        ContentValues constructorValues = getConstructorContentValues();
+        ContentValues constructorValues = TestUtil.getConstructorContentValues();
 
         long constructorRowId;
         constructorRowId = db.insert(ConstructorEntry.TABLE_NAME, null, constructorValues);
@@ -71,7 +71,7 @@ public class TestDb extends AndroidTestCase {
 
         // Test Circuit table
         // create a map of circuit values
-        ContentValues circuitValues = getCircuitContentValues();
+        ContentValues circuitValues = TestUtil.getCircuitContentValues();
 
         long circuitRowId;
         circuitRowId = db.insert(CircuitEntry.TABLE_NAME, null, circuitValues);
@@ -153,44 +153,6 @@ public class TestDb extends AndroidTestCase {
     }
 
     // Helper methods to get values to insert for the tests
-    ContentValues getConstructorContentValues() {
-        ContentValues values = new ContentValues();
-
-        String constructorId = "mclaren";
-        String url = "http://test.com";
-        String name = "McLaren";
-        String nationality = "British";
-
-        values.put(ConstructorEntry.COLUMN_CONSTRUCTOR_ID, constructorId);
-        values.put(ConstructorEntry.COLUMN_URL, url);
-        values.put(ConstructorEntry.COLUMN_NAME, name);
-        values.put(ConstructorEntry.COLUMN_NATIONALITY, nationality);
-
-        return values;
-    }
-
-    ContentValues getCircuitContentValues() {
-        ContentValues values = new ContentValues();
-
-        String circuitId = "albert_park";
-        String url = "http://test.circuit.com";
-        String circuitName = "Albert Park Grand Prix Circuit";
-        double locationLat = -37.8497;
-        double locationLong = 144.968;
-        String locality = "Melbourne";
-        String country = "Australia";
-
-        values.put(CircuitEntry.COLUMN_CIRCUIT_ID, circuitId);
-        values.put(CircuitEntry.COLUMN_URL, url);
-        values.put(CircuitEntry.COLUMN_CIRCUIT_NAME, circuitName);
-        values.put(CircuitEntry.COLUMN_LOCATION_LAT, locationLat);
-        values.put(CircuitEntry.COLUMN_LOCATION_LONG, locationLong);
-        values.put(CircuitEntry.COLUMN_LOCATION_LOCALITY, locality);
-        values.put(CircuitEntry.COLUMN_LOCATION_COUNTRY, country);
-
-        return values;
-    }
-
     ContentValues getRaceContentValues(long circuitId) {
         ContentValues values = new ContentValues();
 
