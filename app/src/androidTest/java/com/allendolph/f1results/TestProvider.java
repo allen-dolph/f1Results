@@ -15,6 +15,8 @@ import com.allendolph.f1results.data.F1Contract.RaceEntry;
 import com.allendolph.f1results.data.F1Contract.ResultsEntry;
 import com.allendolph.f1results.data.F1DbHelper;
 
+import junit.framework.Test;
+
 import java.util.Map;
 import java.util.Set;
 
@@ -27,6 +29,7 @@ public class TestProvider extends AndroidTestCase {
     public void testInsertReadUpdateDeleteProvider() {
         testDeleteAllRecords();
 
+        // DRIVER
         // create a map of driver values
         ContentValues driverValues = TestUtil.getDriverContentValues();
 
@@ -43,6 +46,7 @@ public class TestProvider extends AndroidTestCase {
         // Use our helper method to test the driver entry
         validateCursor(driverValues, driverCursor);
 
+        // CONSTRUCTOR
         // create a map of constructor values
         ContentValues constructorValues = TestUtil.getConstructorContentValues();
 
@@ -61,6 +65,7 @@ public class TestProvider extends AndroidTestCase {
         // Use our helper method to test the constructor entry
         validateCursor(constructorValues, constructorCursor);
 
+        // CIRCUIT
         // create a map of circuit values
         ContentValues circuitValues = TestUtil.getCircuitContentValues();
 
@@ -77,20 +82,55 @@ public class TestProvider extends AndroidTestCase {
 
         // Use our helper method to test the circuit entry
         validateCursor(circuitValues, circuitCursor);
+
+        // RACE
+        // create a map of race values
+        ContentValues raceValues = TestUtil.getRaceContentValues(circuitRowId);
+
+        String raceSeason;
+        String raceRound;
+        Uri raceUri = mContext.getContentResolver().insert(RaceEntry.CONTENT_URI, raceValues);
+        raceSeason = RaceEntry.getSeasonFromUri(raceUri);
+        raceRound = RaceEntry.getRoundFromUri(raceUri);
+
+        // Verify we got a row back
+        assertEquals(raceSeason, String.valueOf(TestUtil.RACE_SEASON));
+        assertEquals(raceRound, String.valueOf(TestUtil.RACE_ROUND));
+
+        // now test our race query methods
+        // /race
+        Cursor raceCursor = simpleQuery(RaceEntry.CONTENT_URI);
+        validateCursor(raceValues, raceCursor);
+        raceCursor.close();
+
+        // /race/2008
+        raceCursor = simpleQuery(RaceEntry.buildRaceSeasonUri(String.valueOf(TestUtil.RACE_SEASON)));
+        validateCursor(raceValues, raceCursor);
+        raceCursor.close();
+
+        // /race/2008/5
+        Uri raceWithSeasonAndRoundUri = RaceEntry.buildRaceSeasonWithRound(
+                String.valueOf(TestUtil.RACE_SEASON),
+                String.valueOf(TestUtil.RACE_ROUND));
+        raceCursor = simpleQuery(raceWithSeasonAndRoundUri);
+        validateCursor(raceValues, raceCursor);
     }
 
     public void testDeleteAllRecords() {
         simpleDelete(DriverEntry.CONTENT_URI);
         simpleDelete(ConstructorEntry.CONTENT_URI);
         simpleDelete(CircuitEntry.CONTENT_URI);
+        simpleDelete(RaceEntry.CONTENT_URI);
 
         Cursor driverCursor = simpleQuery(DriverEntry.CONTENT_URI);
         Cursor constructorCursor = simpleQuery(ConstructorEntry.CONTENT_URI);
         Cursor circuitCursor = simpleQuery(CircuitEntry.CONTENT_URI);
+        Cursor raceCursor = simpleQuery(RaceEntry.CONTENT_URI);
 
         assertEquals(driverCursor.getCount(), 0);
         assertEquals(constructorCursor.getCount(), 0);
         assertEquals(circuitCursor.getCount(), 0);
+        assertEquals(raceCursor.getCount(), 0);
     }
 
     public void testGetType() {
@@ -129,6 +169,25 @@ public class TestProvider extends AndroidTestCase {
         type = mContext.getContentResolver().getType(CircuitEntry.buildCircuitUri(testCircuitId));
         // vnd.android.cursor.dir/com.allendolph.f1results/circuit/5
         assertEquals(CircuitEntry.CONTENT_ITEM_TYPE, type);
+
+        // RACE
+        // content://com.allendolph.f1results/race
+        type = mContext.getContentResolver().getType(RaceEntry.CONTENT_URI);
+        // vnd.android.cursor.dir/com.allendolph.f1results/race
+        assertEquals(RaceEntry.CONTENT_TYPE, type);
+
+        String testSeason = "2008";
+        // content://com.allendolph.f1results/race/2008
+        type = mContext.getContentResolver().getType(RaceEntry.buildRaceSeasonUri(testSeason));
+        // vnd.android.cursor.dir/com.allendolph.f1results/race/2008
+        assertEquals(RaceEntry.CONTENT_TYPE, type);
+
+        String testRound = "5";
+        // content://com.allendolph.f1results/race/2008/5
+        type = mContext.getContentResolver()
+                .getType(RaceEntry.buildRaceSeasonWithRound(testSeason, testRound));
+        // vnd.android.cursor.dir/com.allendolph.f1results/race/2008/5
+        assertEquals(RaceEntry.CONTENT_ITEM_TYPE, type);
     }
 
     // Make sure that everything in our content matches our insert

@@ -9,6 +9,10 @@ import com.allendolph.f1results.data.F1Contract;
  */
 public class TestUtil {
 
+    public static final long RACE_SEASON = 2008;
+    public static final long RACE_ROUND = 5;
+
+    // Helper methods to get values to insert for the tests
     public static ContentValues getDriverContentValues() {
         ContentValues values = new ContentValues();
 
@@ -67,6 +71,68 @@ public class TestUtil {
         values.put(F1Contract.CircuitEntry.COLUMN_LOCATION_LONG, locationLong);
         values.put(F1Contract.CircuitEntry.COLUMN_LOCATION_LOCALITY, locality);
         values.put(F1Contract.CircuitEntry.COLUMN_LOCATION_COUNTRY, country);
+
+        return values;
+    }
+
+    public static ContentValues getRaceContentValues(long circuitId) {
+        ContentValues values = new ContentValues();
+
+        long season = RACE_SEASON;
+        long round = RACE_ROUND;
+        String url = "http://test.url";
+        String raceName = "Australian Grand Prix";
+        String date = "2008-03-16";
+        String time = "04:30:00Z";
+
+        values.put(F1Contract.RaceEntry.COLUMN_CIRCUIT_ID, circuitId);
+
+        values.put(F1Contract.RaceEntry.COLUMN_SEASON, season);
+        values.put(F1Contract.RaceEntry.COLUMN_ROUND, round);
+        values.put(F1Contract.RaceEntry.COLUMN_URL, url);
+        values.put(F1Contract.RaceEntry.COLUMN_RACE_NAME, raceName);
+        values.put(F1Contract.RaceEntry.COLUMN_DATE, date);
+        values.put(F1Contract.RaceEntry.COLUMN_TIME, time);
+
+        return values;
+    }
+
+    public static ContentValues getResultContentValues(long driverId, long constructorId, long raceId) {
+        ContentValues values = new ContentValues();
+
+        int number = 22;
+        int position = 1;
+        String positionText = "1";
+        int points = 10;
+        int grid = 1;
+        int laps = 58;
+        String status = "Finished";
+        String millis = "5690616";
+        String time = "1:34:50:616";
+        int fastestLapRank = 2;
+        int fastestLapLap = 39;
+        String fastestLapTime = "1:27:452";
+        String averageSpeedUnits = "kph";
+        double averageSpeedSpeed = 218.300;
+
+        values.put(F1Contract.ResultsEntry.COLUMN_DRIVER_ID, driverId);
+        values.put(F1Contract.ResultsEntry.COLUMN_CONSTRUCTOR_ID, constructorId);
+        values.put(F1Contract.ResultsEntry.COLUMN_RACE_ID, raceId);
+
+        values.put(F1Contract.ResultsEntry.COLUMN_NUMBER, number);
+        values.put(F1Contract.ResultsEntry.COLUMN_POSITION, position);
+        values.put(F1Contract.ResultsEntry.COLUMN_POSITION_TEXT, positionText);
+        values.put(F1Contract.ResultsEntry.COLUMN_POINTS, points);
+        values.put(F1Contract.ResultsEntry.COLUMN_GRID, grid);
+        values.put(F1Contract.ResultsEntry.COLUMN_LAPS, laps);
+        values.put(F1Contract.ResultsEntry.COLUMN_STATUS, status);
+        values.put(F1Contract.ResultsEntry.COLUMN_TIME_MILLIS, millis);
+        values.put(F1Contract.ResultsEntry.COLUMN_TIME, time);
+        values.put(F1Contract.ResultsEntry.COLUMN_FASTEST_LAP_RANK, fastestLapRank);
+        values.put(F1Contract.ResultsEntry.COLUMN_FASTEST_LAP_LAP, fastestLapLap);
+        values.put(F1Contract.ResultsEntry.COLUMN_FASTEST_LAP_TIME, fastestLapTime);
+        values.put(F1Contract.ResultsEntry.COLUMN_FASTEST_LAP_AVG_SPEED_UNITS, averageSpeedUnits);
+        values.put(F1Contract.ResultsEntry.COLUMN_FASTEST_LAP_AVG_SPEED_SPEED, averageSpeedSpeed);
 
         return values;
     }

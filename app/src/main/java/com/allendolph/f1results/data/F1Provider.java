@@ -38,6 +38,9 @@ public class F1Provider extends ContentProvider {
 
     private F1DbHelper mOpenHelper;
 
+    private static final String sRaceSeasonWithRoundSelection =
+            RaceEntry.TABLE_NAME + "." + RaceEntry.COLUMN_SEASON + " = ? AND " +
+            RaceEntry.TABLE_NAME + "." + RaceEntry.COLUMN_ROUND + " = ?";
 
     private static UriMatcher buildUriMatcher() {
         // All paths added to the UriMatcher have a corresponding code to return
@@ -161,6 +164,43 @@ public class F1Provider extends ContentProvider {
                 );
                 break;
             }
+            // "race"
+            case RACE: {
+                retCursor = mOpenHelper.getReadableDatabase().query(
+                        RaceEntry.TABLE_NAME,
+                        projection,
+                        selection,
+                        selectionArgs,
+                        null,
+                        null,
+                        sortOrder
+                );
+                break;
+            }
+            case RACE_SEASON: {
+                retCursor = mOpenHelper.getReadableDatabase().query(
+                        RaceEntry.TABLE_NAME,
+                        projection,
+                        RaceEntry.COLUMN_SEASON + " = '" + RaceEntry.getSeasonFromUri(uri) + "'",
+                        selectionArgs,
+                        null,
+                        null,
+                        sortOrder
+                );
+                break;
+            }
+            case RACE_SEASON_ROUND: {
+                retCursor = mOpenHelper.getReadableDatabase().query(
+                        RaceEntry.TABLE_NAME,
+                        projection,
+                        sRaceSeasonWithRoundSelection,
+                        new String[] { RaceEntry.getSeasonFromUri(uri), RaceEntry.getRoundFromUri(uri)},
+                        null,
+                        null,
+                        sortOrder
+                );
+                break;
+            }
             default:
                 throw new UnsupportedOperationException("Unknown uri: " + uri);
         }
@@ -229,6 +269,18 @@ public class F1Provider extends ContentProvider {
                 }
                 break;
             }
+            case RACE: {
+                long _id = db.insert(RaceEntry.TABLE_NAME, null, values);
+                if(_id > 0) {
+                    returnUri = RaceEntry.buildRaceSeasonWithRound(
+                            values.getAsString(RaceEntry.COLUMN_SEASON),
+                            values.getAsString(RaceEntry.COLUMN_ROUND)
+                    );
+                } else {
+                    returnUri = null;
+                }
+                break;
+            }
             default:
                 throw new UnsupportedOperationException("Unknown uri: " + uri);
         }
@@ -251,6 +303,9 @@ public class F1Provider extends ContentProvider {
                 break;
             case CIRCUIT:
                 rowsDeleted = db.delete(CircuitEntry.TABLE_NAME, selection, selectionArgs);
+                break;
+            case RACE:
+                rowsDeleted = db.delete(RaceEntry.TABLE_NAME, selection, selectionArgs);
                 break;
             default:
                 throw new UnsupportedOperationException("Unknown uri: " + uri);
