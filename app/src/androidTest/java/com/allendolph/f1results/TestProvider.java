@@ -113,7 +113,12 @@ public class TestProvider extends AndroidTestCase {
                 String.valueOf(TestUtil.RACE_SEASON),
                 String.valueOf(TestUtil.RACE_ROUND));
         raceCursor = simpleQuery(raceWithSeasonAndRoundUri);
-        validateCursor(raceValues, raceCursor);
+        ContentValues raceWithCircuitValues = new ContentValues();
+
+        // combine the race and circuit values as that is what we are expecting back
+        raceWithCircuitValues.putAll(raceValues);
+        raceWithCircuitValues.putAll(circuitValues);
+        validateCursor(raceWithCircuitValues, raceCursor);
     }
 
     public void testDeleteAllRecords() {

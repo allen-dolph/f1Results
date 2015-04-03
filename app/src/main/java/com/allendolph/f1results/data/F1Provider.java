@@ -30,7 +30,7 @@ public class F1Provider extends ContentProvider {
     private static final int CIRCUIT_ID = 301;
     private static final int RACE = 400;
     private static final int RACE_SEASON = 401;
-    private static final int RACE_SEASON_ROUND = 402;
+    private static final int RACE_SEASON_ROUND_WITH_CIRCUIT = 402;
     private static final int RESULT = 500;
     private static final int RESULT_RACE = 501;
 
@@ -38,9 +38,37 @@ public class F1Provider extends ContentProvider {
 
     private F1DbHelper mOpenHelper;
 
+    // Helper query builders for composite result sets
+    private static final SQLiteQueryBuilder sRaceBySeasonAndRoundQueryBuilder;
+
+    static {
+        sRaceBySeasonAndRoundQueryBuilder = new SQLiteQueryBuilder();
+        sRaceBySeasonAndRoundQueryBuilder.setTables(
+                RaceEntry.TABLE_NAME + " INNER JOIN " +
+                CircuitEntry.TABLE_NAME +
+                " ON " + RaceEntry.TABLE_NAME + "." + RaceEntry.COLUMN_CIRCUIT_ID +
+                " = " + CircuitEntry.TABLE_NAME + "." + CircuitEntry._ID);
+    }
+
+
     private static final String sRaceSeasonWithRoundSelection =
             RaceEntry.TABLE_NAME + "." + RaceEntry.COLUMN_SEASON + " = ? AND " +
             RaceEntry.TABLE_NAME + "." + RaceEntry.COLUMN_ROUND + " = ?";
+
+
+
+    private Cursor getRaceBySeasonAndRoundWithCircuit(Uri uri, String[] projection, String sortOrder) {
+        String season = RaceEntry.getSeasonFromUri(uri);
+        String round = RaceEntry.getRoundFromUri(uri);
+        return sRaceBySeasonAndRoundQueryBuilder.query(mOpenHelper.getReadableDatabase(),
+            projection,
+            sRaceSeasonWithRoundSelection,
+            new String[] { season, round},
+            null,
+            null,
+            sortOrder
+        );
+    }
 
     private static UriMatcher buildUriMatcher() {
         // All paths added to the UriMatcher have a corresponding code to return
@@ -64,7 +92,7 @@ public class F1Provider extends ContentProvider {
         // Races
         matcher.addURI(authority, F1Contract.PATH_RACE, RACE);
         matcher.addURI(authority, F1Contract.PATH_RACE + "/#", RACE_SEASON);
-        matcher.addURI(authority, F1Contract.PATH_RACE + "/#/#", RACE_SEASON_ROUND);
+        matcher.addURI(authority, F1Contract.PATH_RACE + "/#/#", RACE_SEASON_ROUND_WITH_CIRCUIT);
 
         // Results
         matcher.addURI(authority, F1Contract.PATH_RESULT, RESULT);
@@ -189,16 +217,8 @@ public class F1Provider extends ContentProvider {
                 );
                 break;
             }
-            case RACE_SEASON_ROUND: {
-                retCursor = mOpenHelper.getReadableDatabase().query(
-                        RaceEntry.TABLE_NAME,
-                        projection,
-                        sRaceSeasonWithRoundSelection,
-                        new String[] { RaceEntry.getSeasonFromUri(uri), RaceEntry.getRoundFromUri(uri)},
-                        null,
-                        null,
-                        sortOrder
-                );
+            case RACE_SEASON_ROUND_WITH_CIRCUIT: {
+                retCursor = getRaceBySeasonAndRoundWithCircuit(uri, projection, sortOrder);
                 break;
             }
             default:
@@ -228,7 +248,7 @@ public class F1Provider extends ContentProvider {
             case RACE:
             case RACE_SEASON:
                 return RaceEntry.CONTENT_TYPE;
-            case RACE_SEASON_ROUND:
+            case RACE_SEASON_ROUND_WITH_CIRCUIT:
                 return RaceEntry.CONTENT_ITEM_TYPE;
             default:
                 throw new UnsupportedOperationException("Unknown uri: " + uri);

@@ -80,7 +80,7 @@ public class TestUtil {
 
         long season = RACE_SEASON;
         long round = RACE_ROUND;
-        String url = "http://test.url";
+        String url = "http://test.race.url";
         String raceName = "Australian Grand Prix";
         String date = "2008-03-16";
         String time = "04:30:00Z";

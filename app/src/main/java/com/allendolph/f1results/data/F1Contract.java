@@ -73,7 +73,7 @@ public class F1Contract {
         // Columns
         public static final String COLUMN_SEASON = "season";
         public static final String COLUMN_ROUND = "round";
-        public static final String COLUMN_URL = "url";
+        public static final String COLUMN_URL = "raceUrl";
         public static final String COLUMN_RACE_NAME = "raceName";
         public static final String COLUMN_DATE = "date";
         public static final String COLUMN_TIME = "time";
@@ -114,7 +114,7 @@ public class F1Contract {
 
         // Columns
         public static final String COLUMN_CIRCUIT_ID = "circuitId";
-        public static final String COLUMN_URL = "url";
+        public static final String COLUMN_URL = "circuitUrl";
         public static final String COLUMN_CIRCUIT_NAME = "circuitName";
         public static final String COLUMN_LOCATION_LAT = "lat";
         public static final String COLUMN_LOCATION_LONG = "long";
@@ -147,7 +147,7 @@ public class F1Contract {
         public static final String COLUMN_DRIVER_ID = "driverId";
         public static final String COLUMN_PERMANENT_NUMBER = "permanentNumber";
         public static final String COLUMN_CODE = "code";
-        public static final String COLUMN_URL = "url";
+        public static final String COLUMN_URL = "driverUrl";
         public static final String COLUMN_GIVEN_NAME = "givenName";
         public static final String COLUMN_FAMILY_NAME = "familyName";
         public static final String COLUMN_DATE_OF_BIRTH = "dateOfBirth";
@@ -177,7 +177,7 @@ public class F1Contract {
 
         // Columns
         public static final String COLUMN_CONSTRUCTOR_ID = "constructorId";
-        public static final String COLUMN_URL = "url";
+        public static final String COLUMN_URL = "constructorUrl";
         public static final String COLUMN_NAME = "name";
         public static final String COLUMN_NATIONALITY = "nationality";
 
