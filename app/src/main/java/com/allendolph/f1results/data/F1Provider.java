@@ -6,7 +6,6 @@ import android.content.ContentValues;
 import android.content.UriMatcher;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteDatabaseLockedException;
 import android.database.sqlite.SQLiteQueryBuilder;
 import android.net.Uri;
 
@@ -15,8 +14,6 @@ import com.allendolph.f1results.data.F1Contract.ConstructorEntry;
 import com.allendolph.f1results.data.F1Contract.CircuitEntry;
 import com.allendolph.f1results.data.F1Contract.RaceEntry;
 import com.allendolph.f1results.data.F1Contract.ResultsEntry;
-
-import java.sql.SQLException;
 
 /**
  * Created by allendolph on 3/30/15.
@@ -32,7 +29,8 @@ public class F1Provider extends ContentProvider {
     private static final int RACE_SEASON = 401;
     private static final int RACE_SEASON_ROUND_WITH_CIRCUIT = 402;
     private static final int RESULT = 500;
-    private static final int RESULT_RACE = 501;
+    private static final int RESULT_SEASON_AND_ROUND = 501;
+    private static final int RESULT_SEASON_AND_ROUND_AND_POSITION = 502;
 
     private static final UriMatcher sUriMatcher = buildUriMatcher();
 
@@ -40,22 +38,44 @@ public class F1Provider extends ContentProvider {
 
     // Helper query builders for composite result sets
     private static final SQLiteQueryBuilder sRaceBySeasonAndRoundQueryBuilder;
+    private static final SQLiteQueryBuilder sResultQueryBuilder;
 
     static {
         sRaceBySeasonAndRoundQueryBuilder = new SQLiteQueryBuilder();
         sRaceBySeasonAndRoundQueryBuilder.setTables(
                 RaceEntry.TABLE_NAME + " INNER JOIN " +
-                CircuitEntry.TABLE_NAME +
-                " ON " + RaceEntry.TABLE_NAME + "." + RaceEntry.COLUMN_CIRCUIT_ID +
-                " = " + CircuitEntry.TABLE_NAME + "." + CircuitEntry._ID);
+                        CircuitEntry.TABLE_NAME +
+                        " ON " + RaceEntry.TABLE_NAME + "." + RaceEntry.COLUMN_CIRCUIT_ID +
+                        " = " + CircuitEntry.TABLE_NAME + "." + CircuitEntry._ID);
     }
 
+    static {
+        sResultQueryBuilder = new SQLiteQueryBuilder();
+        sResultQueryBuilder.setTables(
+                ResultsEntry.TABLE_NAME + " INNER JOIN " +
+                        DriverEntry.TABLE_NAME +
+                        " ON " + ResultsEntry.TABLE_NAME + "." + ResultsEntry.COLUMN_DRIVER_ID +
+                        " = " + DriverEntry.TABLE_NAME + "." + DriverEntry._ID +
+                        " INNER JOIN " + ConstructorEntry.TABLE_NAME +
+                        " ON " + ResultsEntry.TABLE_NAME + "." + ResultsEntry.COLUMN_CONSTRUCTOR_ID +
+                        " = " + ConstructorEntry.TABLE_NAME + "." + ConstructorEntry._ID +
+                        " LEFT JOIN " + RaceEntry.TABLE_NAME +
+                        " ON " + ResultsEntry.TABLE_NAME + "." + ResultsEntry.COLUMN_RACE_ID +
+                        " = " + RaceEntry.TABLE_NAME + "." + RaceEntry._ID);
+    }
 
     private static final String sRaceSeasonWithRoundSelection =
             RaceEntry.TABLE_NAME + "." + RaceEntry.COLUMN_SEASON + " = ? AND " +
             RaceEntry.TABLE_NAME + "." + RaceEntry.COLUMN_ROUND + " = ?";
 
+    private static final String sResultSeasonWithRoundSelection =
+            RaceEntry.TABLE_NAME + "." + RaceEntry.COLUMN_SEASON + " = ? AND " +
+            RaceEntry.TABLE_NAME + "." + RaceEntry.COLUMN_ROUND + " = ?";
 
+    private static final String sResultSeasonWithRoundWithPositionSelection =
+            RaceEntry.TABLE_NAME + "." + RaceEntry.COLUMN_SEASON + " = ? AND " +
+            RaceEntry.TABLE_NAME + "." + RaceEntry.COLUMN_ROUND + " = ? AND " +
+            ResultsEntry.TABLE_NAME + "." + ResultsEntry.COLUMN_POSITION + " = ?";
 
     private Cursor getRaceBySeasonAndRoundWithCircuit(Uri uri, String[] projection, String sortOrder) {
         String season = RaceEntry.getSeasonFromUri(uri);
@@ -67,6 +87,49 @@ public class F1Provider extends ContentProvider {
             null,
             null,
             sortOrder
+        );
+    }
+
+    private Cursor getResultWithDriverAndConstructor(Uri uri, String[] projection, String sortOrder) {
+        return sResultQueryBuilder.query(mOpenHelper.getReadableDatabase(),
+            projection,
+            null,
+            null,
+            null,
+            null,
+            sortOrder
+
+        );
+    }
+
+    private Cursor getResultBySeasonAndRoundWithDriverAndConstructor(
+            Uri uri, String[] projection, String sortOrder) {
+        String season = ResultsEntry.getSeasonFromUri(uri);
+        String round = ResultsEntry.getRoundFromUri(uri);
+
+        return sResultQueryBuilder.query(mOpenHelper.getReadableDatabase(),
+                projection,
+                sResultSeasonWithRoundSelection,
+                new String[] { season, round },
+                null,
+                null,
+                sortOrder
+        );
+    }
+
+    private Cursor getResultBySeasonAndRoundAndPositionWithDriverAndConstructor(
+            Uri uri, String[] projection, String sortOrder) {
+        String season = ResultsEntry.getSeasonFromUri(uri);
+        String round = ResultsEntry.getRoundFromUri(uri);
+        String position = ResultsEntry.getPositionFromUri(uri);
+
+        return sResultQueryBuilder.query(mOpenHelper.getReadableDatabase(),
+                projection,
+                sResultSeasonWithRoundWithPositionSelection,
+                new String[] { season, round, position },
+                null,
+                null,
+                sortOrder
         );
     }
 
@@ -96,7 +159,8 @@ public class F1Provider extends ContentProvider {
 
         // Results
         matcher.addURI(authority, F1Contract.PATH_RESULT, RESULT);
-        matcher.addURI(authority, F1Contract.PATH_RESULT + "/#", RESULT_RACE);
+        matcher.addURI(authority, F1Contract.PATH_RESULT + "/#/#", RESULT_SEASON_AND_ROUND);
+        matcher.addURI(authority, F1Contract.PATH_RESULT + "/#/#/#", RESULT_SEASON_AND_ROUND_AND_POSITION);
 
         return matcher;
     }
@@ -205,6 +269,7 @@ public class F1Provider extends ContentProvider {
                 );
                 break;
             }
+            // "race/2008"
             case RACE_SEASON: {
                 retCursor = mOpenHelper.getReadableDatabase().query(
                         RaceEntry.TABLE_NAME,
@@ -217,8 +282,26 @@ public class F1Provider extends ContentProvider {
                 );
                 break;
             }
+            // "race/2008/5"
             case RACE_SEASON_ROUND_WITH_CIRCUIT: {
                 retCursor = getRaceBySeasonAndRoundWithCircuit(uri, projection, sortOrder);
+                break;
+            }
+            // "result"
+            case RESULT: {
+                retCursor = getResultWithDriverAndConstructor(uri, projection, sortOrder);
+                break;
+            }
+            // "result/2008/5"
+            case RESULT_SEASON_AND_ROUND: {
+                retCursor = getResultBySeasonAndRoundWithDriverAndConstructor(
+                        uri, projection, sortOrder);
+                break;
+            }
+            // "result/2008/5/1
+            case RESULT_SEASON_AND_ROUND_AND_POSITION: {
+                retCursor = getResultBySeasonAndRoundAndPositionWithDriverAndConstructor(
+                        uri, projection, sortOrder);
                 break;
             }
             default:
@@ -250,6 +333,11 @@ public class F1Provider extends ContentProvider {
                 return RaceEntry.CONTENT_TYPE;
             case RACE_SEASON_ROUND_WITH_CIRCUIT:
                 return RaceEntry.CONTENT_ITEM_TYPE;
+            case RESULT:
+            case RESULT_SEASON_AND_ROUND:
+                return ResultsEntry.CONTENT_TYPE;
+            case RESULT_SEASON_AND_ROUND_AND_POSITION:
+                return ResultsEntry.CONTENT_ITEM_TYPE;
             default:
                 throw new UnsupportedOperationException("Unknown uri: " + uri);
         }
@@ -301,6 +389,43 @@ public class F1Provider extends ContentProvider {
                 }
                 break;
             }
+            case RESULT: {
+                long _id = db.insert(ResultsEntry.TABLE_NAME, null, values);
+                if(_id > 0) {
+                    // we need to get the associated season and round from the result to
+                    Cursor raceCursor = mOpenHelper.getReadableDatabase().query(
+                            RaceEntry.TABLE_NAME,
+                            new String[] {
+                                    RaceEntry._ID,
+                                    RaceEntry.COLUMN_SEASON,
+                                    RaceEntry.COLUMN_ROUND
+                            },
+                            RaceEntry._ID + " = '" + values.getAsString(ResultsEntry.COLUMN_RACE_ID) + "'",
+                            null,
+                            null,
+                            null,
+                            null
+                    );
+                    if(!raceCursor.moveToFirst()) {
+                        returnUri = null;
+                    }
+
+                    // get the season and round
+                    String season = String.valueOf(
+                            raceCursor.getLong(raceCursor.getColumnIndex(RaceEntry.COLUMN_SEASON)));
+                    String round = String.valueOf(
+                            raceCursor.getLong(raceCursor.getColumnIndex(RaceEntry.COLUMN_ROUND)));
+
+                    returnUri = ResultsEntry.buildResultsWithSeasonAndRoundAndPositionUri(
+                            season,
+                            round,
+                            values.getAsString(ResultsEntry.COLUMN_POSITION)
+                    );
+                } else {
+                    returnUri = null;
+                }
+                break;
+            }
             default:
                 throw new UnsupportedOperationException("Unknown uri: " + uri);
         }
@@ -326,6 +451,9 @@ public class F1Provider extends ContentProvider {
                 break;
             case RACE:
                 rowsDeleted = db.delete(RaceEntry.TABLE_NAME, selection, selectionArgs);
+                break;
+            case RESULT:
+                rowsDeleted = db.delete(ResultsEntry.TABLE_NAME, selection, selectionArgs);
                 break;
             default:
                 throw new UnsupportedOperationException("Unknown uri: " + uri);

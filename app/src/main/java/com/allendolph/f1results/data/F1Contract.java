@@ -178,7 +178,7 @@ public class F1Contract {
         // Columns
         public static final String COLUMN_CONSTRUCTOR_ID = "constructorId";
         public static final String COLUMN_URL = "constructorUrl";
-        public static final String COLUMN_NAME = "name";
+        public static final String COLUMN_NAME = "constructorName";
         public static final String COLUMN_NATIONALITY = "nationality";
 
         // Content Uri Helper Methods
@@ -204,7 +204,7 @@ public class F1Contract {
         public static final String TABLE_NAME = "results";
 
         // Columns
-        public static final String COLUMN_NUMBER = "number";
+        public static final String COLUMN_NUMBER = "carNumber";
         public static final String COLUMN_POSITION = "position";
         public static final String COLUMN_POSITION_TEXT = "positionText";
         public static final String COLUMN_POINTS = "points";
@@ -212,7 +212,7 @@ public class F1Contract {
         public static final String COLUMN_LAPS = "laps";
         public static final String COLUMN_STATUS = "status";
         public static final String COLUMN_TIME_MILLIS = "timeMillis";
-        public static final String COLUMN_TIME = "time";
+        public static final String COLUMN_TIME = "raceTime";
         public static final String COLUMN_FASTEST_LAP_RANK = "fastestLapRank";
         public static final String COLUMN_FASTEST_LAP_LAP = "fastestLapLap";
         public static final String COLUMN_FASTEST_LAP_TIME = "fastedLapTime";
@@ -225,12 +225,28 @@ public class F1Contract {
         public static final String COLUMN_CONSTRUCTOR_ID = "constructor_id";
 
         // Content Uri Helper Methods
-        public static Uri buildResultUri(long id) {
-            return ContentUris.withAppendedId(CONTENT_URI, id);
+        public static Uri buildResultWithSeasonAndRoundUri(String season, String round) {
+            return CONTENT_URI.buildUpon().appendPath(season).appendPath(round).build();
         }
 
-        public static String getResultFromUri(Uri uri) {
+        public static Uri buildResultsWithSeasonAndRoundAndPositionUri(
+                String season,
+                String round,
+                String position) {
+            return CONTENT_URI.buildUpon()
+                    .appendPath(season).appendPath(round).appendPath(position).build();
+        }
+
+        public static String getSeasonFromUri(Uri uri) {
             return uri.getPathSegments().get(1);
+        }
+
+        public static String getRoundFromUri(Uri uri) {
+            return uri.getPathSegments().get(2);
+        }
+
+        public static String getPositionFromUri(Uri uri) {
+            return uri.getPathSegments().get(3);
         }
     }
 

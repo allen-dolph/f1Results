@@ -101,6 +101,9 @@ public class TestProvider extends AndroidTestCase {
         // /race
         Cursor raceCursor = simpleQuery(RaceEntry.CONTENT_URI);
         validateCursor(raceValues, raceCursor);
+        // we need the race row id for later tests
+        raceCursor.moveToFirst();
+        long raceRowId = raceCursor.getLong(raceCursor.getColumnIndex(RaceEntry._ID));
         raceCursor.close();
 
         // /race/2008
@@ -119,6 +122,55 @@ public class TestProvider extends AndroidTestCase {
         raceWithCircuitValues.putAll(raceValues);
         raceWithCircuitValues.putAll(circuitValues);
         validateCursor(raceWithCircuitValues, raceCursor);
+
+        //RESULT
+        // create a map of result values
+        ContentValues resultValues = TestUtil.getResultContentValues(
+                driverRowId, constructorRowId, raceRowId);
+
+        String season;
+        String round;
+        String position;
+        Uri resultUri = mContext.getContentResolver().insert(ResultsEntry.CONTENT_URI, resultValues);
+
+        // verify we got a row back
+        season = ResultsEntry.getSeasonFromUri(resultUri);
+        round = ResultsEntry.getRoundFromUri(resultUri);
+        position = ResultsEntry.getPositionFromUri(resultUri);
+
+        assertEquals(season, String.valueOf(TestUtil.RACE_SEASON));
+        assertEquals(round, String.valueOf(TestUtil.RACE_ROUND));
+        assertEquals(position, String.valueOf(TestUtil.RESULT_POSITION));
+
+        // now test our result query uris
+        // result
+        Cursor resultCursor = simpleQuery(ResultsEntry.CONTENT_URI);
+        validateCursor(resultValues, resultCursor);
+        resultCursor.close();
+
+        // result/2008/5
+        Uri resultWithSeasonAndRoundUri = ResultsEntry.buildResultWithSeasonAndRoundUri(
+                String.valueOf(TestUtil.RACE_SEASON),
+                String.valueOf(TestUtil.RACE_ROUND));
+        resultCursor = simpleQuery(resultWithSeasonAndRoundUri);
+
+        // combine the driver and constructor as that is what we are expecting back
+        ContentValues resultWithDriverAndConstructorValues = new ContentValues();
+        resultWithDriverAndConstructorValues.putAll(resultValues);
+        resultWithDriverAndConstructorValues.putAll(driverValues);
+        resultWithDriverAndConstructorValues.putAll(constructorValues);
+
+        validateCursor(resultWithDriverAndConstructorValues, resultCursor);
+        resultCursor.close();
+
+        // result/2008/5/1
+        Uri resultWithAndRoundWithPositionUri = ResultsEntry
+                .buildResultsWithSeasonAndRoundAndPositionUri(season, round, position);
+        resultCursor = simpleQuery(resultWithAndRoundWithPositionUri);
+
+        // we can use the already constructed content values
+        validateCursor(resultWithDriverAndConstructorValues, resultCursor);
+        resultCursor.close();
     }
 
     public void testDeleteAllRecords() {
@@ -126,16 +178,19 @@ public class TestProvider extends AndroidTestCase {
         simpleDelete(ConstructorEntry.CONTENT_URI);
         simpleDelete(CircuitEntry.CONTENT_URI);
         simpleDelete(RaceEntry.CONTENT_URI);
+        simpleDelete(ResultsEntry.CONTENT_URI);
 
         Cursor driverCursor = simpleQuery(DriverEntry.CONTENT_URI);
         Cursor constructorCursor = simpleQuery(ConstructorEntry.CONTENT_URI);
         Cursor circuitCursor = simpleQuery(CircuitEntry.CONTENT_URI);
         Cursor raceCursor = simpleQuery(RaceEntry.CONTENT_URI);
+        Cursor resultCursor = simpleQuery(ResultsEntry.CONTENT_URI);
 
         assertEquals(driverCursor.getCount(), 0);
         assertEquals(constructorCursor.getCount(), 0);
         assertEquals(circuitCursor.getCount(), 0);
         assertEquals(raceCursor.getCount(), 0);
+        assertEquals(resultCursor.getCount(), 0);
     }
 
     public void testGetType() {
@@ -193,6 +248,26 @@ public class TestProvider extends AndroidTestCase {
                 .getType(RaceEntry.buildRaceSeasonWithRound(testSeason, testRound));
         // vnd.android.cursor.dir/com.allendolph.f1results/race/2008/5
         assertEquals(RaceEntry.CONTENT_ITEM_TYPE, type);
+
+        // RESULT
+        // content://com.allendolph.f1results/result
+        type = mContext.getContentResolver().getType(ResultsEntry.CONTENT_URI);
+        // vnd.android.cursor.dir/com.allendolph.f1results/result
+        assertEquals(ResultsEntry.CONTENT_TYPE, type);
+
+        // content://com.allendolph.f1results/result/2008/5
+        type = mContext.getContentResolver()
+                .getType(ResultsEntry.buildResultWithSeasonAndRoundUri(testSeason, testRound));
+        // vnd.android.cursor.dir/com.allendolph.f1results/result/2008/5
+        assertEquals(ResultsEntry.CONTENT_TYPE, type);
+
+        String testPosition = "1";
+        // content://com.allendolph.f1results/result/2008/5/1
+        type = mContext.getContentResolver()
+                .getType(ResultsEntry
+                .buildResultsWithSeasonAndRoundAndPositionUri(testSeason, testRound, testPosition));
+        // vnd.android.cursor.dir/com.allendolph.f1results/result/2008/5/1
+        assertEquals(ResultsEntry.CONTENT_ITEM_TYPE, type);
     }
 
     // Make sure that everything in our content matches our insert
