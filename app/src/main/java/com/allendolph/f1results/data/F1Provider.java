@@ -32,6 +32,7 @@ public class F1Provider extends ContentProvider {
     private static final int RESULT_SEASON_AND_ROUND = 501;
     private static final int RESULT_SEASON_AND_ROUND_AND_POSITION = 502;
 
+
     private static final UriMatcher sUriMatcher = buildUriMatcher();
 
     private F1DbHelper mOpenHelper;
