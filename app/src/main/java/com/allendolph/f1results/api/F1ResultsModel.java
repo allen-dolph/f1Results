@@ -1,5 +1,8 @@
 package com.allendolph.f1results.api;
 
+import android.content.ContentValues;
+
+import com.allendolph.f1results.data.F1Contract;
 import com.google.gson.annotations.SerializedName;
 
 /**
@@ -38,8 +41,22 @@ public class F1ResultsModel {
         public String time;
         @SerializedName("Circuit")
         public Circuit circuit;
-        @SerializedName("Result")
+        @SerializedName("Results")
         public RaceResult[] results;
+
+        public ContentValues getAsRaceEntryContentValues(long circuitId) {
+            ContentValues values = new ContentValues();
+
+            values.put(F1Contract.RaceEntry.COLUMN_CIRCUIT_ID, circuitId);
+            values.put(F1Contract.RaceEntry.COLUMN_SEASON, this.season);
+            values.put(F1Contract.RaceEntry.COLUMN_ROUND, this.round);
+            values.put(F1Contract.RaceEntry.COLUMN_URL, this.url);
+            values.put(F1Contract.RaceEntry.COLUMN_RACE_NAME, this.raceName);
+            values.put(F1Contract.RaceEntry.COLUMN_DATE, this.date);
+            values.put(F1Contract.RaceEntry.COLUMN_TIME, this.time);
+
+            return values;
+        }
     }
 
     public class Circuit {
@@ -48,6 +65,20 @@ public class F1ResultsModel {
         public String raceName;
         @SerializedName("Location")
         public Location location;
+
+        public ContentValues getAsCircuitEntryContentValues() {
+            ContentValues values = new ContentValues();
+
+            values.put(F1Contract.CircuitEntry.COLUMN_CIRCUIT_ID, this.circuitId);
+            values.put(F1Contract.CircuitEntry.COLUMN_URL, this.url);
+            values.put(F1Contract.CircuitEntry.COLUMN_CIRCUIT_NAME, this.url);
+            values.put(F1Contract.CircuitEntry.COLUMN_LOCATION_LAT, this.location.lat);
+            values.put(F1Contract.CircuitEntry.COLUMN_LOCATION_LONG, this.location.lng);
+            values.put(F1Contract.CircuitEntry.COLUMN_LOCATION_LOCALITY, this.location.locality);
+            values.put(F1Contract.CircuitEntry.COLUMN_LOCATION_COUNTRY, this.location.country);
+
+            return values;
+        }
     }
 
     public class Location {

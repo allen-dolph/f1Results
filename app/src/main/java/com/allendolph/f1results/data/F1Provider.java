@@ -9,6 +9,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteQueryBuilder;
 import android.net.Uri;
 
+import com.allendolph.f1results.api.F1ResultsModel;
 import com.allendolph.f1results.data.F1Contract.DriverEntry;
 import com.allendolph.f1results.data.F1Contract.ConstructorEntry;
 import com.allendolph.f1results.data.F1Contract.CircuitEntry;
@@ -27,7 +28,7 @@ public class F1Provider extends ContentProvider {
     private static final int CIRCUIT_ID = 301;
     private static final int RACE = 400;
     private static final int RACE_SEASON = 401;
-    private static final int RACE_SEASON_ROUND_WITH_CIRCUIT = 402;
+    private static final int RACE_SEASON_AND_ROUND = 402;
     private static final int RESULT = 500;
     private static final int RESULT_SEASON_AND_ROUND = 501;
     private static final int RESULT_SEASON_AND_ROUND_AND_POSITION = 502;
@@ -156,7 +157,7 @@ public class F1Provider extends ContentProvider {
         // Races
         matcher.addURI(authority, F1Contract.PATH_RACE, RACE);
         matcher.addURI(authority, F1Contract.PATH_RACE + "/#", RACE_SEASON);
-        matcher.addURI(authority, F1Contract.PATH_RACE + "/#/#", RACE_SEASON_ROUND_WITH_CIRCUIT);
+        matcher.addURI(authority, F1Contract.PATH_RACE + "/#/#", RACE_SEASON_AND_ROUND);
 
         // Results
         matcher.addURI(authority, F1Contract.PATH_RESULT, RESULT);
@@ -284,7 +285,7 @@ public class F1Provider extends ContentProvider {
                 break;
             }
             // "race/2008/5"
-            case RACE_SEASON_ROUND_WITH_CIRCUIT: {
+            case RACE_SEASON_AND_ROUND: {
                 retCursor = getRaceBySeasonAndRoundWithCircuit(uri, projection, sortOrder);
                 break;
             }
@@ -332,7 +333,7 @@ public class F1Provider extends ContentProvider {
             case RACE:
             case RACE_SEASON:
                 return RaceEntry.CONTENT_TYPE;
-            case RACE_SEASON_ROUND_WITH_CIRCUIT:
+            case RACE_SEASON_AND_ROUND:
                 return RaceEntry.CONTENT_ITEM_TYPE;
             case RESULT:
             case RESULT_SEASON_AND_ROUND:
@@ -468,6 +469,39 @@ public class F1Provider extends ContentProvider {
 
     @Override
     public int update(Uri uri, ContentValues values, String selection, String[] selectionArgs) {
-        return 0;
+        final SQLiteDatabase db = mOpenHelper.getWritableDatabase();
+        final int match = sUriMatcher.match(uri);
+        int rowsUpdated;
+
+        switch (match) {
+            case DRIVER_ID:
+                return db.update(DriverEntry.TABLE_NAME,
+                        values,
+                        DriverEntry._ID + " = ?",
+                        new String[] { DriverEntry.getDriverFromUri(uri)});
+            case CONSTRUCTOR_ID:
+                return db.update(ConstructorEntry.TABLE_NAME,
+                        values,
+                        ConstructorEntry._ID + " = ?",
+                        new String[] { ConstructorEntry.getConstructorFromUri(uri)});
+            case CIRCUIT_ID:
+                return db.update(CircuitEntry.TABLE_NAME,
+                        values,
+                        CircuitEntry._ID + " = ?",
+                        new String[] { CircuitEntry.getCircuitFromUri(uri)});
+            case RACE_SEASON_AND_ROUND:
+                String season = ResultsEntry.getSeasonFromUri(uri);
+                String round = ResultsEntry.getRoundFromUri(uri);
+
+                int updateCount = db.update(RaceEntry.TABLE_NAME,
+                        values,
+                        RaceEntry.COLUMN_SEASON + " = ? AND " +
+                        RaceEntry.COLUMN_ROUND + " = ?",
+                        new String[] { season, round }
+                );
+                return updateCount;
+            default:
+                throw new UnsupportedOperationException("unknown uri: " + uri);
+        }
     }
 }

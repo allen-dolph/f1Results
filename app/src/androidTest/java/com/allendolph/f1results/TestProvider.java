@@ -45,6 +45,19 @@ public class TestProvider extends AndroidTestCase {
 
         // Use our helper method to test the driver entry
         validateCursor(driverValues, driverCursor);
+        driverCursor.close();
+
+        // Test update driver by id
+        driverValues.put(DriverEntry.COLUMN_NATIONALITY, "French");
+        int driverUpdateCount = mContext.getContentResolver()
+                .update(driverUri, driverValues, null, null);
+
+        // re-query
+        driverCursor = simpleQuery(driverUri);
+
+        assertEquals(1, driverUpdateCount);
+        validateCursor(driverValues, driverCursor);
+        driverCursor.close();
 
         // CONSTRUCTOR
         // create a map of constructor values
@@ -64,6 +77,19 @@ public class TestProvider extends AndroidTestCase {
 
         // Use our helper method to test the constructor entry
         validateCursor(constructorValues, constructorCursor);
+        constructorCursor.close();
+
+        // Test the update constructor by id method
+        constructorValues.put(ConstructorEntry.COLUMN_NATIONALITY, "Italian");
+        int constructorUpdateCount = mContext.getContentResolver()
+                .update(constructorUri, constructorValues, null, null);
+
+        // re-query
+        constructorCursor = simpleQuery(constructorUri);
+
+        assertEquals(1, constructorUpdateCount);
+        validateCursor(constructorValues, constructorCursor);
+        constructorCursor.close();
 
         // CIRCUIT
         // create a map of circuit values
@@ -82,6 +108,19 @@ public class TestProvider extends AndroidTestCase {
 
         // Use our helper method to test the circuit entry
         validateCursor(circuitValues, circuitCursor);
+        circuitCursor.close();
+
+        // test update circuit by circuit id
+        circuitValues.put(CircuitEntry.COLUMN_LOCATION_COUNTRY, "France");
+        int circuitUpdateCount = mContext.getContentResolver()
+                .update(circuitUri, circuitValues, null, null);
+
+        // re-query
+        circuitCursor = simpleQuery(circuitUri);
+
+        assertEquals(1, circuitUpdateCount);
+        validateCursor(circuitValues, circuitCursor);
+        circuitCursor.close();
 
         // RACE
         // create a map of race values
@@ -122,6 +161,27 @@ public class TestProvider extends AndroidTestCase {
         raceWithCircuitValues.putAll(raceValues);
         raceWithCircuitValues.putAll(circuitValues);
         validateCursor(raceWithCircuitValues, raceCursor);
+        raceCursor.close();
+
+        // now test update
+        // /race/2008/5
+        int raceUpdateCount = mContext.getContentResolver()
+                .update(raceWithSeasonAndRoundUri, raceValues, null, null);
+        // this really isn't going to change anything, but we know one record
+        // should have been updated
+        assertEquals(1, raceUpdateCount);
+
+        // now lets actually make a change to one of the values, submit and re-query
+        raceValues.put(RaceEntry.COLUMN_URL, "http://race.updated.com");
+        raceUpdateCount = mContext.getContentResolver()
+                .update(raceWithSeasonAndRoundUri, raceValues, null, null);
+        // now re-query
+        raceCursor = simpleQuery(raceWithSeasonAndRoundUri);
+
+        // now assert the update values
+        assertEquals(1, raceUpdateCount);
+        validateCursor(raceValues, raceCursor);
+        raceCursor.close();
 
         //RESULT
         // create a map of result values

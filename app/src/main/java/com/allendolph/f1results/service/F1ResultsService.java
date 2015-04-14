@@ -1,16 +1,23 @@
 package com.allendolph.f1results.service;
 
 import android.app.IntentService;
+import android.content.BroadcastReceiver;
+import android.content.ContentUris;
+import android.content.ContentValues;
+import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
 import android.net.Uri;
 import android.util.Log;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
+import com.allendolph.f1results.api.F1ResultsModel;
+import com.allendolph.f1results.api.F1ResultsModel.F1ResultResponse;
+import com.allendolph.f1results.api.F1ResultsRestClient;
+import com.allendolph.f1results.data.F1Contract;
+import com.allendolph.f1results.data.F1Contract.CircuitEntry;
+import com.allendolph.f1results.data.F1Contract.RaceEntry;
+
+import java.util.concurrent.Callable;
 
 /**
  * Created by allendolph on 4/8/15.
@@ -18,6 +25,7 @@ import java.net.URL;
 public class F1ResultsService extends IntentService {
 
     private static final String LOG_TAG = "F1RESULTS_SERVICE";
+    private static final int LIMIT = 1000;
 
     // Intent Extra tags
     public static final String SEASON_EXTRA = "seasonExtra";
@@ -35,61 +43,92 @@ public class F1ResultsService extends IntentService {
 
         String season = intent.getStringExtra(SEASON_EXTRA);
 
-        // These need to be declared outside the try/catch so that
-        // they can be closed in the finally block.
-        HttpURLConnection urlConnection = null;
-        BufferedReader reader = null;
 
-        // will contain the raw JSON response as a string
-        String resultJsonStr = null;
+        // We're going to use the "big cookie" model here so will use our retrofit interface
+        // to the api to get all data required for the application for the selected season
+        // this includes both schedule and full results set
+        //
+        // for now we'll use the syncronous methods because this is happening in the background
+        // service.  In the future we can update to use the async method so we can make both calls
+        // at the same time.
+        F1ResultResponse scheduleResponse = F1ResultsRestClient.getInstance()
+                .getScheduleSync(season, LIMIT, null);
+        F1ResultResponse resultResponse = F1ResultsRestClient.getInstance()
+                .getResultsSync(season, LIMIT, null);
 
-        String format = ".json";
+        // now that we have the necessary data, we need to parse and add to the database
+        // TODO
 
-        try {
-            // Construct the URL for the Ergast F1 results API
-            final String BASE_URL = "http://ergast.com/api/f1/";
+        // first insert the schedule response data
+        addUpdateScheduleData(scheduleResponse);
+    }
 
-            // we need to make multiple queries against the api
-
-            // first for the race schedule
-            // http://ergast.com/api/f1/2015
-            Uri raceUri = Uri.parse(BASE_URL).buildUpon()
-                    .appendPath(season).build();
-
-            URL raceUrl = new URL(raceUri.toString());
-
-            // create the request to Ergast f1 api, and open the connection
-            urlConnection = (HttpURLConnection) raceUrl.openConnection();
-            urlConnection.setRequestMethod("GET");
-            urlConnection.connect();
-
-            // read the input stream into a string
-            InputStream inputStream = urlConnection.getInputStream();
-            StringBuffer buffer = new StringBuffer();
-            if(inputStream == null) {
-                // nothing to do.
-                return;
-            }
-            reader = new BufferedReader(new InputStreamReader(inputStream));
-
-            String line;
-
-        } catch (IOException e) {
-            Log.e(LOG_TAG, "ERROR: " + e);
-            // we we don't get the expected data back there is no reason to parse
+    private void addUpdateScheduleData(F1ResultResponse scheduleResponse) {
+        //verify that the the response has races to post to the schedule
+        String season;
+        //validate the response
+        if(scheduleResponse.mrData == null ||
+                scheduleResponse.mrData.raceTable == null ||
+                scheduleResponse.mrData.raceTable.season == "" ||
+                scheduleResponse.mrData.raceTable.races == null) {
             return;
-        } finally {
-            if(urlConnection != null) {
-                urlConnection.disconnect();
+        }
+        season = scheduleResponse.mrData.raceTable.season;
+
+        // check if the season is already in the database
+        for(F1ResultsModel.Race race : scheduleResponse.mrData.raceTable.races) {
+            // first we need to check if the circuit is already in the database
+            Cursor circuitCursor = getContentResolver().query(
+                    CircuitEntry.CONTENT_URI,
+                    new String[] { CircuitEntry._ID },
+                    CircuitEntry.COLUMN_CIRCUIT_ID + " = '" + race.circuit.circuitId + "'",
+                    null,
+                    null,
+                    null
+            );
+
+            long circuitId;
+            if(circuitCursor.moveToFirst()) {
+                circuitId = circuitCursor
+                       .getLong(circuitCursor.getColumnIndex(CircuitEntry._ID));
+            } else {
+                ContentValues circuitValues = race.circuit.getAsCircuitEntryContentValues();
+                Uri circuitUri = getContentResolver()
+                        .insert(CircuitEntry.CONTENT_URI, circuitValues);
+                circuitId = Long.parseLong(CircuitEntry.getCircuitFromUri(circuitUri));
             }
-            if(reader != null) {
-                try {
-                    reader.close();
-                } catch (final IOException e) {
-                    Log.e(LOG_TAG, "Error closing stream: ", e);
-                }
+
+            Uri raceUri = RaceEntry
+                    .buildRaceSeasonWithRound(race.season, String.valueOf(race.round));
+            Cursor raceCursor = simpleQuery(raceUri);
+
+
+            // if the there is already a race we need to update, else insert
+            ContentValues raceValues = race.getAsRaceEntryContentValues(circuitId);
+            if(raceCursor.moveToFirst()) {
+                Uri raceWithSeasonAndRoundUri = RaceEntry.buildRaceSeasonWithRound(
+                        race.season,
+                        String.valueOf(race.round)
+                );
+                getContentResolver().update(raceWithSeasonAndRoundUri, raceValues, null, null);
+            } else {
+                raceUri = getContentResolver().insert(RaceEntry.CONTENT_URI, raceValues);
             }
         }
     }
 
+    // helper methods so that the code reads cleaner
+    private Cursor simpleQuery(Uri uri) {
+        return getContentResolver().query(uri, null, null, null, null);
+    }
+
+    static public class AlarmReceiver extends BroadcastReceiver {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Intent sendIntent = new Intent(context, F1ResultsService.class);
+            sendIntent.putExtra(SEASON_EXTRA, intent.getStringExtra(SEASON_EXTRA));
+            context.startService(sendIntent);
+        }
+    }
 }
